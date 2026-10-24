@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MedSchedule | Hệ Thống Đặt Lịch Khám Bệnh Trực Tuyến 24/7</title>
+  <meta name="description" content="Hệ thống đặt lịch hẹn khám bệnh trực tuyến chuyên nghiệp, bảo mật cao. Chọn chuyên khoa, khung giờ mong muốn và nhận mã xác nhận ngay sau 30 giây.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400;1,600&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="css/style.css?v=2026.2">
+</head>
+<body>
+  <!-- Header / Navigation -->
+  <header class="navbar">
+    <div class="nav-container">
+      <a href="/" class="nav-brand">
+        <div class="brand-icon"><i class="fa-solid fa-heart-pulse"></i></div>
+        <div class="brand-text">
+          <span class="brand-title">MedSchedule</span>
+          <span class="brand-subtitle">Hệ Thống Đặt Lịch Y Tế Trực Tuyến</span>
+        </div>
+      </a>
+      <nav class="nav-menu">
+        <button class="nav-btn active" id="btnTabBook" onclick="switchMainTab('book')">
+          <i class="fa-solid fa-calendar-plus"></i> Đặt Lịch Khám Mới
+        </button>
+        <button class="nav-btn" id="btnTabLookup" onclick="switchMainTab('lookup')">
+          <i class="fa-solid fa-magnifying-glass"></i> Tra Cứu Lịch Hẹn
+        </button>
+      </nav>
+      <div class="nav-right-actions">
+        <div class="system-status" title="Trạng thái máy chủ và cơ sở dữ liệu">
+          <span class="status-dot"></span>
+          <span class="status-text" id="systemHealthText">Hệ thống sẵn sàng</span>
+        </div>
+        <a href="/admin" class="nav-btn nav-btn-outline" title="Khu vực dành cho nhân viên quản trị">
+          <i class="fa-solid fa-lock"></i> Cổng Quản Trị
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero Banner -->
+  <section class="hero-section">
+    <div class="hero-content">
+      <div class="hero-badge">
+        <i class="fa-solid fa-shield-halved"></i> Tiện Ích Y Tế Số - Chuẩn Quốc Tế - Bảo Mật Bệnh Án
+      </div>
+      <h1>Đặt Lịch Hẹn Khám Bệnh & Chăm Sóc Sức Khỏe</h1>
+      <p>Chủ động thời gian, chọn bác sĩ chuyên khoa và nhận mã lịch hẹn ngay sau 30 giây. Không cần xếp hàng chờ đợi tại bệnh viện.</p>
+      
+      <div class="hero-pills">
+        <div class="hero-pill-item"><i class="fa-solid fa-circle-check"></i> Tiết kiệm 80% thời gian chờ</div>
+        <div class="hero-pill-item"><i class="fa-solid fa-circle-check"></i> 100% Bác sĩ CKI & CKII giàu kinh nghiệm</div>
+        <div class="hero-pill-item"><i class="fa-solid fa-circle-check"></i> Xác nhận mã hẹn tức thì qua tin nhắn</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main Container -->
+  <main class="main-container">
+    <!-- TAB 1: ĐẶT LỊCH HẸN THEO 4 BƯỚC -->
+    <div id="bookingSection" class="tab-content active">
+      <!-- Steps Indicator -->
+      <div class="stepper">
+        <div class="step-item active" id="stepIndicator1">
+          <div class="step-number">1</div>
+          <div class="step-label">Chọn Dịch Vụ</div>
+        </div>
+        <div class="step-line" id="stepLine1"></div>
+        <div class="step-item" id="stepIndicator2">
+          <div class="step-number">2</div>
+          <div class="step-label">Ngày & Khung Giờ</div>
+        </div>
+        <div class="step-line" id="stepLine2"></div>
+        <div class="step-item" id="stepIndicator3">
+          <div class="step-number">3</div>
+          <div class="step-label">Thông Tin Bệnh Nhân</div>
+        </div>
+        <div class="step-line" id="stepLine3"></div>
+        <div class="step-item" id="stepIndicator4">
+          <div class="step-number">4</div>
+          <div class="step-label">Xác Nhận Phiếu Khám</div>
+        </div>
+      </div>
+
+      <!-- BƯỚC 1: CHỌN DỊCH VỤ KHÁM -->
+      <div class="step-panel active" id="stepPanel1">
+        <div class="panel-header">
+          <h2><i class="fa-solid fa-stethoscope"></i> Bước 1: Lựa Chọn Dịch Vụ Khám Bệnh</h2>
+          <p>Vui lòng lựa chọn dịch vụ khám y tế phù hợp với nhu cầu sức khỏe của bạn</p>
+        </div>
+
+        <!-- Category Filter -->
+        <div class="category-filter-bar" id="categoryFilterBar">
+          <button class="category-chip active" onclick="filterServices('all')">Tất cả dịch vụ</button>
+          <button class="category-chip" onclick="filterServices('Đa khoa')">Đa khoa</button>
+          <button class="category-chip" onclick="filterServices('Chuyên khoa')">Tim mạch</button>
+          <button class="category-chip" onclick="filterServices('Nha khoa')">Nha khoa</button>
+          <button class="category-chip" onclick="filterServices('Xét nghiệm')">Xét nghiệm</button>
+          <button class="category-chip" onclick="filterServices('Nhi khoa')">Nhi khoa</button>
+          <button class="category-chip" onclick="filterServices('Mắt')">Mắt</button>
+        </div>
+
+        <!-- Services Grid -->
+        <div class="services-grid" id="servicesGrid">
+          <div class="loading-state">
+            <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>
+            <p>Đang tải danh mục dịch vụ từ hệ thống...</p>
+          </div>
+        </div>
+
+        <div class="panel-footer">
+          <div></div>
+          <button class="btn btn-primary" id="btnNextToStep2" onclick="goToStep(2)" disabled>
+            Tiếp Tục Chọn Ngày & Giờ <i class="fa-solid fa-arrow-right"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- BƯỚC 2: CHỌN NGÀY & KHUNG GIỜ -->
+      <div class="step-panel" id="stepPanel2">
+        <div class="panel-header">
+          <h2><i class="fa-regular fa-calendar-check"></i> Bước 2: Chọn Ngày Đến Khám & Khung Giờ</h2>
+          <p>Lựa chọn ngày hẹn khám và khung giờ còn trống phù hợp với thời gian biểu của bạn</p>
+        </div>
+
+        <div class="selection-summary-badge" id="selectedServiceBadge">
+          <i class="fa-solid fa-notes-medical"></i> Dịch vụ đã chọn: <strong id="summaryServiceName">—</strong> (<span id="summaryServicePrice">—</span>)
+        </div>
+
+        <div class="date-selection-box">
+          <label class="form-label"><i class="fa-regular fa-calendar"></i> Chọn ngày khám bệnh:</label>
+          <div class="date-shortcuts">
+            <button class="date-btn active" id="btnDateToday" onclick="selectDateShortcut('today')">Hôm Nay</button>
+            <button class="date-btn" id="btnDateTomorrow" onclick="selectDateShortcut('tomorrow')">Ngày Mai</button>
+            <button class="date-btn" id="btnDateDayAfter" onclick="selectDateShortcut('dayAfter')">Ngày Kia</button>
+          </div>
+          <div class="custom-date-row">
+            <input type="date" id="appointmentDateInput" class="form-control" onchange="onDateChanged()" style="max-width: 280px;">
+          </div>
+        </div>
+
+        <div class="time-slots-container">
+          <div>
+            <div class="slot-period-header">
+              <i class="fa-solid fa-sun"></i> Buổi Sáng (08:00 - 11:30)
+            </div>
+            <div class="slots-grid" id="morningSlotsGrid">
+              <!-- Render động -->
+            </div>
+          </div>
+
+          <div>
+            <div class="slot-period-header">
+              <i class="fa-solid fa-cloud-sun"></i> Buổi Chiều (13:30 - 16:30)
+            </div>
+            <div class="slots-grid" id="afternoonSlotsGrid">
+              <!-- Render động -->
+            </div>
+          </div>
+        </div>
+
+        <div class="panel-footer">
+          <button class="btn btn-secondary" onclick="goToStep(1)">
+            <i class="fa-solid fa-arrow-left"></i> Quay Lại Chọn Dịch Vụ
+          </button>
+          <button class="btn btn-primary" id="btnNextToStep3" onclick="goToStep(3)" disabled>
+            Tiếp Tục Nhập Thông Tin <i class="fa-solid fa-arrow-right"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- BƯỚC 3: THÔNG TIN BỆNH NHÂN -->
+      <div class="step-panel" id="stepPanel3">
+        <div class="panel-header">
+          <h2><i class="fa-solid fa-user-pen"></i> Bước 3: Thông Tin Khách Hàng / Bệnh Nhân</h2>
+          <p>Vui lòng cung cấp thông tin chính xác để nhân viên y tế chuẩn bị hồ sơ khám chu đáo</p>
+        </div>
+
+        <form id="customerForm" onsubmit="event.preventDefault(); goToStep(4);">
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label"><i class="fa-solid fa-user"></i> Họ và tên bệnh nhân <span class="required">*</span></label>
+              <div class="input-with-icon">
+                <i class="fa-solid fa-user input-icon"></i>
+                <input type="text" id="custName" class="form-control" placeholder="Ví dụ: Nguyễn Văn An" required>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label"><i class="fa-solid fa-phone"></i> Số điện thoại liên hệ <span class="required">*</span></label>
+              <div class="input-with-icon">
+                <i class="fa-solid fa-phone input-icon"></i>
+                <input type="tel" id="custPhone" class="form-control" placeholder="Ví dụ: 0912345678" pattern="^(0|\+84)[3|5|7|8|9][0-9]{8}$" required>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label"><i class="fa-solid fa-envelope"></i> Email nhận phiếu khám</label>
+              <div class="input-with-icon">
+                <i class="fa-solid fa-envelope input-icon"></i>
+                <input type="email" id="custEmail" class="form-control" placeholder="Ví dụ: an.nguyen@gmail.com">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label"><i class="fa-solid fa-venus-mars"></i> Giới tính</label>
+              <div class="gender-options">
+                <div class="gender-option active" id="genderMale" onclick="selectGender('male')">
+                  <i class="fa-solid fa-mars"></i> Nam
+                </div>
+                <div class="gender-option" id="genderFemale" onclick="selectGender('female')">
+                  <i class="fa-solid fa-venus"></i> Nữ
+                </div>
+                <div class="gender-option" id="genderOther" onclick="selectGender('other')">
+                  <i class="fa-solid fa-genderless"></i> Khác
+                </div>
+              </div>
+            </div>
+
+            <div class="form-group full-width">
+              <label class="form-label"><i class="fa-solid fa-clipboard-question"></i> Triệu chứng ban đầu hoặc yêu cầu riêng đối với bác sĩ</label>
+              <textarea id="custNotes" class="form-control" placeholder="Ví dụ: Khám định kỳ, cảm thấy đau nhức đầu gối nhẹ khi leo cầu thang, có tiền sử dị ứng penicillin..."></textarea>
+            </div>
+          </div>
+
+          <div class="panel-footer">
+            <button type="button" class="btn btn-secondary" onclick="goToStep(2)">
+              <i class="fa-solid fa-arrow-left"></i> Quay Lại Chọn Giờ
+            </button>
+            <button type="submit" class="btn btn-primary" id="btnNextToStep4">
+              Kiểm Tra & Xác Nhận Phiếu <i class="fa-solid fa-arrow-right"></i>
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- BƯỚC 4: XÁC NHẬN & HOÀN TẤT ĐẶT LỊCH -->
+      <div class="step-panel" id="stepPanel4">
+        <div class="panel-header">
+          <h2><i class="fa-solid fa-file-invoice-dollar"></i> Bước 4: Kiểm Tra Phiếu Hẹn & Hoàn Tất Đặt Lịch</h2>
+          <p>Vui lòng đối soát lại toàn bộ thông tin lịch hẹn khám trước khi gửi vào hệ thống tiếp nhận</p>
+        </div>
+
+        <div class="voucher-wrapper">
+          <div class="medical-ticket">
+            <div class="ticket-header">
+              <div class="ticket-brand">
+                <div class="brand-icon" style="width:36px; height:36px; font-size:1.1rem;"><i class="fa-solid fa-heart-pulse"></i></div>
+                <div>
+                  <h4 style="color:#0f172a; font-size:1.05rem; font-weight:800;">PHIẾU ĐẶT HẸN KHÁM BỆNH</h4>
+                  <small style="color:var(--text-muted);">MedSchedule Healthcare System</small>
+                </div>
+              </div>
+              <div class="ticket-seal">
+                <i class="fa-solid fa-shield-check"></i> HỢP LỆ
+              </div>
+            </div>
+
+            <div class="ticket-body">
+              <div class="ticket-row">
+                <span class="ticket-row-label"><i class="fa-solid fa-stethoscope"></i> Chuyên khoa / Dịch vụ:</span>
+                <span class="ticket-row-value highlight" id="reviewService">—</span>
+              </div>
+              <div class="ticket-row">
+                <span class="ticket-row-label"><i class="fa-regular fa-calendar-days"></i> Ngày hẹn khám:</span>
+                <span class="ticket-row-value" id="reviewDate">—</span>
+              </div>
+              <div class="ticket-row">
+                <span class="ticket-row-label"><i class="fa-regular fa-clock"></i> Khung giờ dự kiến:</span>
+                <span class="ticket-row-value highlight" id="reviewTime">—</span>
+              </div>
+              <div class="ticket-row">
+                <span class="ticket-row-label"><i class="fa-solid fa-user"></i> Họ tên người khám:</span>
+                <span class="ticket-row-value" id="reviewName">—</span>
+              </div>
+              <div class="ticket-row">
+                <span class="ticket-row-label"><i class="fa-solid fa-phone"></i> Số điện thoại:</span>
+                <span class="ticket-row-value" id="reviewPhone">—</span>
+              </div>
+              <div class="ticket-row" id="reviewEmailRow">
+                <span class="ticket-row-label"><i class="fa-solid fa-envelope"></i> Email:</span>
+                <span class="ticket-row-value" id="reviewEmail">—</span>
+              </div>
+              <div class="ticket-row" id="reviewNotesRow">
+                <span class="ticket-row-label"><i class="fa-solid fa-notes-medical"></i> Ghi chú triệu chứng:</span>
+                <span class="ticket-row-value" id="reviewNotes" style="font-weight:400; max-width:300px; text-align:right;">—</span>
+              </div>
+            </div>
+
+            <div class="ticket-footer">
+              <div class="ticket-barcode">
+                ||| | |||| | ||||| ||| | |||
+                <br>MEDSCHEDULE-APPOINTMENT
+              </div>
+              <div class="ticket-total">
+                <span>Chi Phí Khám Tiêu Chuẩn:</span>
+                <h3 id="reviewPrice">0 đ</h3>
+              </div>
+            </div>
+          </div>
+
+          <div class="agreement-box">
+            <input type="checkbox" id="chkAgreement" checked>
+            <label for="chkAgreement">
+              Tôi cam kết đến trước giờ hẹn 10 phút để làm thủ tục tiếp đón tại quầy lễ tân.
+            </label>
+          </div>
+        </div>
+
+        <div class="panel-footer">
+          <button class="btn btn-secondary" onclick="goToStep(3)">
+            <i class="fa-solid fa-arrow-left"></i> Chỉnh Sửa Thông Tin
+          </button>
+          <button class="btn btn-success" id="btnSubmitBooking" onclick="submitBooking()">
+            <i class="fa-solid fa-check"></i> Xác Nhận Đặt Lịch Hẹn Ngay
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2: TRA CỨU LỊCH HẸN -->
+    <div id="lookupSection" class="tab-content">
+      <div class="lookup-card">
+        <div class="panel-header" style="text-align: center; border: none; padding-bottom: 0;">
+          <h2><i class="fa-solid fa-magnifying-glass"></i> Tra Cứu Thông Tin Lịch Hẹn</h2>
+          <p>Nhập số điện thoại đặt hẹn hoặc mã phiếu khám (dạng APT-XXXXXX) để kiểm tra tình trạng</p>
+        </div>
+
+        <div class="lookup-search-bar">
+          <div class="input-with-icon" style="flex: 1;">
+            <i class="fa-solid fa-magnifying-glass input-icon"></i>
+            <input type="text" id="lookupInput" class="form-control" placeholder="Nhập số điện thoại (ví dụ: 0912345678) hoặc mã hẹn (APT-829104)..." onkeyup="if(event.key==='Enter') executeLookup()">
+          </div>
+          <button class="btn btn-primary" onclick="executeLookup()">
+            <i class="fa-solid fa-search"></i> Tra Cứu
+          </button>
+        </div>
+
+        <div class="lookup-results-container" id="lookupResultsArea">
+          <div style="text-align: center; color: var(--text-muted); padding: 2rem 0;">
+            <i class="fa-regular fa-clipboard fa-3x" style="opacity: 0.3; margin-bottom: 1rem;"></i>
+            <p>Vui lòng nhập thông tin để tra cứu lịch hẹn đã đăng ký.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- SUCCESS BOOKING CELEBRATION MODAL -->
+  <div class="modal-overlay" id="successModal">
+    <div class="modal-box" style="text-align: center; max-width: 520px;">
+      <div class="modal-body" style="padding: 2.5rem 2rem;">
+        <div style="width: 72px; height: 72px; border-radius: 50%; background: rgba(16, 185, 129, 0.15); border: 2px solid var(--emerald); color: var(--emerald-light); font-size: 2.2rem; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 1.2rem; box-shadow: 0 0 25px var(--emerald-glow);">
+          <i class="fa-solid fa-check"></i>
+        </div>
+        <h2 style="font-size: 1.6rem; color: #0f172a; font-weight: 800; margin-bottom: 0.5rem;">Đặt Lịch Hẹn Thành Công!</h2>
+        <p style="color: var(--text-muted); font-size: 0.92rem; margin-bottom: 1.8rem;">
+          Lịch hẹn khám của bạn đã được gửi tới hệ thống tiếp nhận. Vui lòng lưu lại mã tra cứu dưới đây:
+        </p>
+
+        <div style="background: rgba(14, 165, 233, 0.08); border: 1px dashed var(--primary-light); border-radius: var(--radius-md); padding: 1.4rem; margin-bottom: 1.8rem;">
+          <span style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Mã Đặt Lịch Của Bạn:</span>
+          <div style="font-family: inherit; font-size: 2.1rem; font-weight: 800; color: var(--primary); letter-spacing: 0.06em; margin: 0.4rem 0;" id="successBookingCode">
+            APT-XXXXXX
+          </div>
+          <button class="btn btn-secondary" onclick="copyBookingCode()" style="padding: 0.4rem 1rem; font-size: 0.82rem;">
+            <i class="fa-regular fa-copy"></i> Sao Chép Mã
+          </button>
+        </div>
+
+        <div style="display: flex; gap: 0.8rem; justify-content: center;">
+          <button class="btn btn-primary" onclick="window.print()">
+            <i class="fa-solid fa-print"></i> In Phiếu Khám
+          </button>
+          <button class="btn btn-secondary" onclick="closeSuccessModalAndReset()">
+            <i class="fa-solid fa-calendar-plus"></i> Đặt Lịch Mới
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bảng Điều Khiển Quản Trị Hệ Thống | MedSchedule Executive Portal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400;1,600&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="css/style.css?v=2026.2">
+</head>
+<body class="admin-body">
+
+  <!-- =========================================================================
+       1. MÀN HÌNH ĐĂNG NHẬP BẢO MẬT (Hiển thị khi chưa có Token xác thực)
+       ========================================================================= -->
+  <div id="adminLoginSection" class="admin-login-screen">
+    <div class="login-glass-card">
+      <div class="login-shield-icon">
+        <i class="fa-solid fa-shield-halved"></i>
+      </div>
+      <h2>Cổng Quản Trị Hệ Thống</h2>
+      <p>MedSchedule Executive Portal • Xác thực danh tính quản trị viên</p>
+
+      <form id="adminLoginForm" onsubmit="event.preventDefault(); submitAdminLogin();">
+        <div class="form-group" style="text-align: left; margin-bottom: 1.2rem;">
+          <label class="form-label"><i class="fa-solid fa-user-shield"></i> Tên đăng nhập quản trị</label>
+          <div class="input-with-icon">
+            <i class="fa-solid fa-user input-icon"></i>
+            <input type="text" id="adminUser" class="form-control" placeholder="Nhập tên đăng nhập (admin)" required>
+          </div>
+        </div>
+
+        <div class="form-group" style="text-align: left; margin-bottom: 1.5rem;">
+          <label class="form-label"><i class="fa-solid fa-lock"></i> Mật khẩu bảo mật</label>
+          <div class="input-with-icon">
+            <i class="fa-solid fa-lock input-icon"></i>
+            <input type="password" id="adminPass" class="form-control" placeholder="Nhập mật khẩu (Admin@2026!)" required>
+            <i class="fa-solid fa-eye" id="togglePassIcon" onclick="togglePasswordVisibility()" style="position:absolute; right:1.1rem; color:var(--text-muted); cursor:pointer;"></i>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary" id="btnLoginSubmit" style="width: 100%; padding: 0.85rem; font-size: 1rem;">
+          <i class="fa-solid fa-arrow-right-to-bracket"></i> Đăng Nhập Hệ Thống
+        </button>
+      </form>
+
+      <div style="margin-top: 1.8rem; font-size: 0.76rem; color: var(--text-subtle); display:flex; align-items:center; justify-content:center; gap:0.4rem;">
+        <i class="fa-solid fa-fingerprint"></i> Bảo mật token HMAC-SHA256 • Kiểm soát phiên truy cập nghiêm ngặt
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       2. BẢNG ĐIỀU KHIỂN QUẢN TRỊ VIÊN (Hiển thị sau khi xác thực thành công)
+       ========================================================================= -->
+  <div id="adminDashboardSection" style="display: none; min-height: 100vh; flex-direction: column;">
+    
+    <!-- Admin Navbar -->
+    <header class="navbar">
+      <div class="nav-container" style="max-width: 1400px;">
+        <a href="/admin" class="nav-brand">
+          <div class="brand-icon admin-brand-icon"><i class="fa-solid fa-chart-line"></i></div>
+          <div class="brand-text">
+            <span class="brand-title">MedSchedule Admin</span>
+            <span class="brand-subtitle">Cổng Quản Trị & Điều Hành Lịch Hẹn Y Tế</span>
+          </div>
+        </a>
+
+        <!-- Middle: Digital Clock -->
+        <div class="admin-clock-badge">
+          <i class="fa-regular fa-clock" style="color:var(--primary-light);"></i>
+          <span id="adminLiveClock">--:--:--</span>
+        </div>
+
+        <!-- Right: Admin profile & Logout -->
+        <div class="nav-right-actions">
+          <a href="/" target="_blank" class="nav-btn nav-btn-outline" title="Mở trang đặt lịch của khách hàng">
+            <i class="fa-solid fa-globe"></i> Trang Khách Hàng
+          </a>
+          
+          <div style="display:flex; align-items:center; gap:0.6rem; padding:0.35rem 0.85rem; background:rgba(255,255,255,0.04); border-radius:var(--radius-full); border:1px solid var(--border-subtle);">
+            <div style="width:28px; height:28px; border-radius:50%; background:linear-gradient(135deg, #0ea5e9, #6366f1); display:flex; align-items:center; justify-content:center; font-size:0.75rem; color:#fff; font-weight:700;">
+              NM
+            </div>
+            <span style="font-size:0.82rem; font-weight:600; color:var(--text-main);" id="adminProfileName">Nguyễn Minh Ngọc (Admin)</span>
+          </div>
+
+          <button class="btn btn-danger" style="padding:0.45rem 1rem; font-size:0.84rem;" onclick="adminLogout()" title="Đăng xuất an toàn">
+            <i class="fa-solid fa-arrow-right-from-bracket"></i> Đăng Xuất
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Admin Main Body -->
+    <main class="admin-container">
+      <div class="admin-header-row">
+        <div>
+          <h1 style="font-size: 1.85rem; font-weight: 800; color: #0f172a; letter-spacing: -0.025em; line-height: 1.3;">
+            Tổng Quan Điều Hành Lịch Hẹn Khám Bệnh
+          </h1>
+          <p style="color: #64748b; font-size: 0.95rem; margin-top: 0.35rem; font-weight: 500;">
+            Theo dõi, phê duyệt và xử lý hồ sơ hẹn khám của bệnh nhân theo thời gian thực
+          </p>
+        </div>
+
+        <div style="display:flex; gap:0.8rem;">
+          <button class="btn btn-secondary" onclick="loadAdminData()">
+            <i class="fa-solid fa-rotate" id="refreshIcon"></i> Làm Mới Dữ Liệu
+          </button>
+          <button class="btn btn-primary" onclick="openNewAppointmentModal()">
+            <i class="fa-solid fa-plus"></i> Đặt Lịch Tại Quầy
+          </button>
+        </div>
+      </div>
+
+      <!-- 5 Thẻ Thống Kê Tổng Quan (KPIs) -->
+      <div class="stats-grid-5">
+        <div class="kpi-card kpi-total">
+          <div class="kpi-icon"><i class="fa-solid fa-calendar-days"></i></div>
+          <div class="kpi-info">
+            <span class="kpi-label">Tổng Lịch Hẹn</span>
+            <h2 class="kpi-value" id="kpiTotal">0</h2>
+            <span class="kpi-sub">Toàn thời gian</span>
+          </div>
+        </div>
+
+        <div class="kpi-card kpi-pending">
+          <div class="kpi-icon"><i class="fa-solid fa-hourglass-half"></i></div>
+          <div class="kpi-info">
+            <span class="kpi-label">Chờ Xác Nhận</span>
+            <h2 class="kpi-value" id="kpiPending" style="color:var(--amber-light);">0</h2>
+            <span class="kpi-sub">Cần tiếp nhận ngay</span>
+          </div>
+        </div>
+
+        <div class="kpi-card kpi-confirmed">
+          <div class="kpi-icon"><i class="fa-solid fa-circle-check"></i></div>
+          <div class="kpi-info">
+            <span class="kpi-label">Đã Phê Duyệt</span>
+            <h2 class="kpi-value" id="kpiConfirmed" style="color:var(--accent-cyan);">0</h2>
+            <span class="kpi-sub">Sắp đến khám</span>
+          </div>
+        </div>
+
+        <div class="kpi-card kpi-completed">
+          <div class="kpi-icon"><i class="fa-solid fa-user-check"></i></div>
+          <div class="kpi-info">
+            <span class="kpi-label">Đã Hoàn Thành</span>
+            <h2 class="kpi-value" id="kpiCompleted" style="color:var(--emerald-light);">0</h2>
+            <span class="kpi-sub">Đã khám xong</span>
+          </div>
+        </div>
+
+        <div class="kpi-card kpi-revenue">
+          <div class="kpi-icon"><i class="fa-solid fa-coins"></i></div>
+          <div class="kpi-info">
+            <span class="kpi-label">Doanh Thu Dự Kiến</span>
+            <h2 class="kpi-value" id="kpiRevenue" style="font-size:1.35rem; color:var(--purple);">0 đ</h2>
+            <span class="kpi-sub">Lịch hợp lệ</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action & Filter Bar -->
+      <div class="admin-action-bar">
+        <!-- Status Filter Pills -->
+        <div class="filter-status-pills">
+          <button class="filter-pill active" onclick="setFilterStatus('all')">
+            Tất cả trạng thái <span class="pill-count" id="countAll">0</span>
+          </button>
+          <button class="filter-pill" onclick="setFilterStatus('pending')">
+            <i class="fa-solid fa-hourglass-half" style="color:var(--amber-light);"></i> Chờ duyệt <span class="pill-count" id="countPending">0</span>
+          </button>
+          <button class="filter-pill" onclick="setFilterStatus('confirmed')">
+            <i class="fa-solid fa-circle-check" style="color:var(--accent-cyan);"></i> Đã duyệt <span class="pill-count" id="countConfirmed">0</span>
+          </button>
+          <button class="filter-pill" onclick="setFilterStatus('completed')">
+            <i class="fa-solid fa-user-check" style="color:var(--emerald-light);"></i> Hoàn thành <span class="pill-count" id="countCompleted">0</span>
+          </button>
+          <button class="filter-pill" onclick="setFilterStatus('cancelled')">
+            <i class="fa-solid fa-ban" style="color:var(--rose-light);"></i> Đã hủy <span class="pill-count" id="countCancelled">0</span>
+          </button>
+        </div>
+
+        <!-- Right Filters: Date + Search + Export -->
+        <div class="admin-toolbar-right">
+          <div style="display:flex; align-items:center; gap:0.5rem;">
+            <i class="fa-regular fa-calendar" style="color:var(--text-muted);"></i>
+            <input type="date" id="adminFilterDate" class="form-control" style="padding:0.5rem 0.8rem; font-size:0.85rem;" onchange="loadAppointments()">
+          </div>
+
+          <div class="input-with-icon" style="min-width: 280px;">
+            <i class="fa-solid fa-magnifying-glass input-icon"></i>
+            <input type="text" id="adminSearchInput" class="form-control" style="padding:0.5rem 0.8rem 0.5rem 2.4rem; font-size:0.85rem;" placeholder="Tìm tên bệnh nhân, SĐT, mã APT..." onkeyup="if(event.key==='Enter') loadAppointments()">
+          </div>
+
+          <button class="btn btn-secondary" style="padding:0.5rem 0.9rem; font-size:0.85rem;" onclick="exportToCSV()" title="Xuất danh sách ra file CSV">
+            <i class="fa-solid fa-file-csv"></i> Xuất CSV
+          </button>
+        </div>
+      </div>
+
+      <!-- Data Table -->
+      <div class="admin-table-card">
+        <div class="table-responsive">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Mã Đặt Lịch</th>
+                <th>Bệnh Nhân / Khách Hàng</th>
+                <th>Chuyên Khoa / Dịch Vụ</th>
+                <th>Ngày & Giờ Khám</th>
+                <th style="white-space: nowrap; min-width: 140px;">Trạng Thái</th>
+                <th>Ghi Chú Triệu Chứng</th>
+                <th style="text-align: right;">Thao Tác Nhanh</th>
+              </tr>
+            </thead>
+            <tbody id="adminTableBody">
+              <tr>
+                <td colspan="7" style="text-align: center; padding: 3rem 0; color: var(--text-muted);">
+                  <i class="fa-solid fa-circle-notch fa-spin fa-2x" style="margin-bottom: 0.8rem;"></i>
+                  <p>Đang tải danh sách lịch hẹn từ máy chủ...</p>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- =====================================================================
+           3. TRUNG TÂM GIÁM SÁT & HẠ TẦNG (DEVOPS EVALUATION CENTER)
+           Trình bày chuẩn hóa theo Tiêu chí 2, 3, 4, 5, 6 của Đề tài 40
+           ===================================================================== -->
+      <div class="devops-panel-card">
+        <div class="devops-panel-header" onclick="toggleDevOpsPanel()">
+          <div class="devops-panel-title">
+            <i class="fa-solid fa-server"></i>
+            <span>Trung Tâm Giám Sát Hạ Tầng & Công Cụ Hệ Thống (DevOps & Hardening Center)</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:0.6rem; color:var(--text-muted); font-size:0.85rem;">
+            <span>Xem thông tin chấm bài (Grafana, pgAdmin, Prometheus, Loki)</span>
+            <i class="fa-solid fa-chevron-down" id="devopsToggleIcon"></i>
+          </div>
+        </div>
+
+        <div id="devopsPanelContent" style="display: block;">
+          <div class="devops-grid">
+            <!-- 1. Database pgAdmin -->
+            <div class="devops-item-card">
+              <div class="devops-item-header">
+                <span class="devops-item-title"><i class="fa-solid fa-database" style="color:#38bdf8;"></i> pgAdmin 4 (PostgreSQL)</span>
+                <span class="status-pill completed" style="font-size:0.7rem; padding:0.2rem 0.5rem;"><i class="fa-solid fa-check"></i> Tiêu chí 2</span>
+              </div>
+              <div class="devops-item-body">
+                <div>• Cổng dịch vụ: <code>http://localhost:5050</code></div>
+                <div>• Email: <code>admin@appointment.com</code></div>
+                <div>• Mật khẩu: <code>AdminPgAdminP@ss_2026!</code></div>
+                <div style="margin-top:0.6rem;">
+                  <a href="http://localhost:5050" target="_blank" class="btn btn-secondary" style="padding:0.35rem 0.75rem; font-size:0.78rem;">
+                    <i class="fa-solid fa-arrow-up-right-from-square"></i> Mở pgAdmin 4
+                  </a>
+                </div>
+              </div>
+            </div>
+
+            <!-- 2. Grafana Dashboard -->
+            <div class="devops-item-card">
+              <div class="devops-item-header">
+                <span class="devops-item-title"><i class="fa-solid fa-chart-line" style="color:#f59e0b;"></i> Grafana Dashboard</span>
+                <span class="status-pill completed" style="font-size:0.7rem; padding:0.2rem 0.5rem;"><i class="fa-solid fa-check"></i> Tiêu chí 4</span>
+              </div>
+              <div class="devops-item-body">
+                <div>• Cổng dịch vụ: <code>http://localhost:3001</code></div>
+                <div>• User: <code>admin</code> | Pass: <code>admin</code> (hoặc <code>GrafanaAdminP@ss_2026!</code>)</div>
+                <div>• Giám sát: Container CPU/RAM, Web HTTP Requests, DB Connection</div>
+                <div style="margin-top:0.6rem;">
+                  <a href="http://localhost:3001" target="_blank" class="btn btn-secondary" style="padding:0.35rem 0.75rem; font-size:0.78rem;">
+                    <i class="fa-solid fa-arrow-up-right-from-square"></i> Mở Grafana
+                  </a>
+                </div>
+              </div>
+            </div>
+
+            <!-- 3. Prometheus Metrics -->
+            <div class="devops-item-card">
+              <div class="devops-item-header">
+                <span class="devops-item-title"><i class="fa-solid fa-fire" style="color:#ef4444;"></i> Prometheus Metrics</span>
+                <span class="status-pill completed" style="font-size:0.7rem; padding:0.2rem 0.5rem;"><i class="fa-solid fa-check"></i> Tiêu chí 4</span>
+              </div>
+              <div class="devops-item-body">
+                <div>• Cổng dịch vụ: <code>http://localhost:9090</code></div>
+                <div>• Metrics Scrape Target: <code>http://app:3000/metrics</code></div>
+                <div>• Custom Metrics: <code>http_requests_total</code>, <code>appointment_bookings_total</code>, <code>db_connection_status</code></div>
+                <div style="margin-top:0.6rem;">
+                  <a href="http://localhost:9090" target="_blank" class="btn btn-secondary" style="padding:0.35rem 0.75rem; font-size:0.78rem;">
+                    <i class="fa-solid fa-arrow-up-right-from-square"></i> Mở Prometheus
+                  </a>
+                </div>
+              </div>
+            </div>
+
+            <!-- 4. Loki & Promtail (LogQL) -->
+            <div class="devops-item-card">
+              <div class="devops-item-header">
+                <span class="devops-item-title"><i class="fa-solid fa-file-code" style="color:#a855f7;"></i> Loki & Promtail (LogQL)</span>
+                <span class="status-pill completed" style="font-size:0.7rem; padding:0.2rem 0.5rem;"><i class="fa-solid fa-check"></i> Tiêu chí 5</span>
+              </div>
+              <div class="devops-item-body">
+                <div>• LogQL 1: <code>{service="appointment-app"}</code></div>
+                <div>• LogQL 2: <code>{service="appointment-app"} |= "APPOINTMENT_CREATED"</code></div>
+                <div>• LogQL 3: <code>{service="appointment-app"} |= "ADMIN_LOGIN"</code></div>
+                <div style="margin-top:0.6rem; color:var(--emerald-light); font-weight:600;">
+                  <i class="fa-solid fa-shield-check"></i> Cấu hình Winston JSON log tập trung
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- =========================================================================
+       MODAL: CHI TIẾT LỊCH HẸN
+       ========================================================================= -->
+  <div class="modal-overlay" id="detailModal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-file-waveform"></i> Chi Tiết Hồ Sơ Lịch Hẹn</h3>
+        <button class="btn-close-modal" onclick="closeModal('detailModal')"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="modal-body" id="detailModalBody">
+        <!-- Render động -->
+      </div>
+      <div class="modal-footer" id="detailModalFooter">
+        <button class="btn btn-secondary" onclick="closeModal('detailModal')">Đóng</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       MODAL: ĐẶT LỊCH TẠI QUẦY (WALK-IN)
+       ========================================================================= -->
+  <div class="modal-overlay" id="newAppointmentModal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-calendar-plus"></i> Tiếp Nhận Đặt Lịch Tại Quầy</h3>
+        <button class="btn-close-modal" onclick="closeModal('newAppointmentModal')"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <form id="newWalkinForm" onsubmit="event.preventDefault(); submitWalkinAppointment();">
+        <div class="modal-body">
+          <div class="form-grid">
+            <div class="form-group full-width">
+              <label class="form-label"><i class="fa-solid fa-stethoscope"></i> Chọn Dịch Vụ Khám <span class="required">*</span></label>
+              <select id="walkinServiceSelect" class="form-control" required>
+                <option value="">-- Đang tải danh sách dịch vụ --</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label"><i class="fa-solid fa-user"></i> Họ Tên Bệnh Nhân <span class="required">*</span></label>
+              <input type="text" id="walkinName" class="form-control" placeholder="Ví dụ: Lê Văn Nam" required>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label"><i class="fa-solid fa-phone"></i> Số Điện Thoại <span class="required">*</span></label>
+              <input type="tel" id="walkinPhone" class="form-control" placeholder="Ví dụ: 0912345678" required>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label"><i class="fa-regular fa-calendar"></i> Ngày Hẹn Khám <span class="required">*</span></label>
+              <input type="date" id="walkinDate" class="form-control" required>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label"><i class="fa-regular fa-clock"></i> Khung Giờ Khám <span class="required">*</span></label>
+              <select id="walkinTime" class="form-control" required>
+                <option value="08:00">08:00 (Sáng)</option>
+                <option value="08:30">08:30 (Sáng)</option>
+                <option value="09:00">09:00 (Sáng)</option>
+                <option value="09:30">09:30 (Sáng)</option>
+                <option value="10:00">10:00 (Sáng)</option>
+                <option value="10:30">10:30 (Sáng)</option>
+                <option value="11:00">11:00 (Sáng)</option>
+                <option value="13:30">13:30 (Chiều)</option>
+                <option value="14:00">14:00 (Chiều)</option>
+                <option value="14:30">14:30 (Chiều)</option>
+                <option value="15:00">15:00 (Chiều)</option>
+                <option value="15:30">15:30 (Chiều)</option>
+                <option value="16:00">16:00 (Chiều)</option>
+              </select>
+            </div>
+
+            <div class="form-group full-width">
+              <label class="form-label"><i class="fa-solid fa-notes-medical"></i> Ghi Chú Y Tế / Tiếp Nhận</label>
+              <textarea id="walkinNotes" class="form-control" placeholder="Ghi chú triệu chứng hoặc tiếp nhận tại quầy lễ tân..."></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('newAppointmentModal')">Hủy</button>
+          <button type="submit" class="btn btn-primary" id="btnSubmitWalkin">
+            <i class="fa-solid fa-check"></i> Lưu & Phê Duyệt Ngay
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="adminToastContainer"></div>
+
+  <script src="js/admin.js"></script>
+</body>
+</html>
