@@ -1,0 +1,289 @@
+# ==============================================================================
+# DOCKER COMPOSE ORCHESTRATION - APPOINTMENT SYSTEM
+# Đề tài 40: Hệ thống Đặt lịch hẹn
+# Đáp ứng đầy đủ 7 tiêu chí đánh giá đề tài môn học
+# ==============================================================================
+
+version: '3.8'
+
+services:
+  # ----------------------------------------------------------------------------
+  # 1. DATABASE: PostgreSQL 16
+  # Tuân thủ: Tiêu chí 2 (Database) & Tiêu chí 6 (Hardening: Network Isolation, Least Privilege)
+  # ----------------------------------------------------------------------------
+  postgres:
+    image: postgres:16-alpine
+    container_name: appointment_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-appointment_db}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-StrongAdminP@ssw0rd_Postgres_2026!}
+      TZ: Asia/Ho_Chi_Minh
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - backend-net
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-appointment_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ----------------------------------------------------------------------------
+  # 2. DATABASE MANAGEMENT: pgAdmin 4
+  # Tuân thủ: Tiêu chí 2 (Quản trị DB qua pgAdmin hoạt động ổn định)
+  # ----------------------------------------------------------------------------
+  pgadmin:
+    image: dpage/pgadmin4:8
+    container_name: appointment_pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-admin@appointment.com}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-AdminPgAdminP@ss_2026!}
+    ports:
+      - "${PGADMIN_PORT:-5050}:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+      - ./database/pgadmin/servers.json:/pgadmin4/servers.json:ro
+      - ./database/pgadmin/pgpass:/pgadmin4/pgpass:ro
+    networks:
+      - backend-net
+      - frontend-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 384M
+
+  # ----------------------------------------------------------------------------
+  # 3. WEB APPLICATION: Node.js Express Backend & Frontend
+  # Tuân thủ: Tiêu chí 2 (App ổn định) & Tiêu chí 6 (Non-root, Hardening)
+  # ----------------------------------------------------------------------------
+  app:
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+    container_name: appointment_app
+    restart: unless-stopped
+    user: "1001:1001"
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: 3000
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${POSTGRES_DB:-appointment_db}
+      DB_USER: ${APP_DB_USER:-appointment_user}
+      DB_PASSWORD: ${APP_DB_PASSWORD:-SecureAppPass_2026!}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-Admin@2026!}
+      ADMIN_JWT_SECRET: ${ADMIN_JWT_SECRET:-medschedule_secure_secret_token_key_2026!}
+      LOG_DIR: /var/log/app
+    volumes:
+      - app_logs:/var/log/app
+      - ./app/public:/app/public:ro
+      - ./app/routes:/app/routes:ro
+    networks:
+      - frontend-net
+      - backend-net
+      - monitoring-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
+  # ----------------------------------------------------------------------------
+  # 4. REVERSE PROXY: Nginx (Cổng 80 & 443 HTTPS, Rate Limiting, Security Headers)
+  # Tuân thủ: Tiêu chí 3 (Nginx Reverse Proxy) & Tiêu chí 6 (Hardening)
+  # ----------------------------------------------------------------------------
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: appointment_nginx
+    restart: unless-stopped
+    ports:
+      - "${NGINX_HTTP_PORT:-80}:80"
+      - "${NGINX_HTTPS_PORT:-443}:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - nginx_logs:/var/log/nginx
+    networks:
+      - frontend-net
+      - monitoring-net
+    depends_on:
+      app:
+        condition: service_healthy
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+
+  # ----------------------------------------------------------------------------
+  # 5. GIÁM SÁT THU THẬP METRICS: Prometheus
+  # Tuân thủ: Tiêu chí 4 (Prometheus thu thập metrics container/web)
+  # ----------------------------------------------------------------------------
+  prometheus:
+    image: prom/prometheus:v2.52.0
+    container_name: appointment_prometheus
+    restart: unless-stopped
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=15d'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    ports:
+      - "${PROMETHEUS_PORT:-9090}:9090"
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    networks:
+      - monitoring-net
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 384M
+
+  # ----------------------------------------------------------------------------
+  # 6. DASHBOARD TRỰC QUAN HÓA: Grafana
+  # Tuân thủ: Tiêu chí 4 (Dashboard giám sát container/web/metrics)
+  # ----------------------------------------------------------------------------
+  grafana:
+    image: grafana/grafana:11.0.0
+    container_name: appointment_grafana
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GF_SECURITY_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GF_SECURITY_ADMIN_PASSWORD:-GrafanaAdminP@ss_2026!}
+      GF_USERS_ALLOW_SIGN_UP: 'false'
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /var/lib/grafana/dashboards/appointment-system.json
+    ports:
+      - "${GRAFANA_PORT:-3001}:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    networks:
+      - frontend-net
+      - monitoring-net
+    depends_on:
+      - prometheus
+      - loki
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 384M
+
+  # ----------------------------------------------------------------------------
+  # 7. LOG SERVER TẬP TRUNG: Grafana Loki
+  # Tuân thủ: Tiêu chí 5 (Loki lưu trữ log tập trung, hỗ trợ LogQL)
+  # ----------------------------------------------------------------------------
+  loki:
+    image: grafana/loki:3.0.0
+    container_name: appointment_loki
+    restart: unless-stopped
+    command: -config.file=/etc/loki/local-config.yaml
+    ports:
+      - "${LOKI_PORT:-3100}:3100"
+    volumes:
+      - ./logging/loki/loki-config.yml:/etc/loki/local-config.yaml:ro
+      - loki_data:/loki
+    networks:
+      - monitoring-net
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 384M
+
+  # ----------------------------------------------------------------------------
+  # 8. LOG SHIPPER: Promtail
+  # Tuân thủ: Tiêu chí 5 (Thu thập log của App & Nginx đẩy về Loki)
+  # ----------------------------------------------------------------------------
+  promtail:
+    image: grafana/promtail:3.0.0
+    container_name: appointment_promtail
+    restart: unless-stopped
+    command: -config.file=/etc/promtail/config.yml
+    volumes:
+      - ./logging/promtail/promtail-config.yml:/etc/promtail/config.yml:ro
+      - app_logs:/var/log/app:ro
+      - nginx_logs:/var/log/nginx:ro
+    networks:
+      - monitoring-net
+    depends_on:
+      - loki
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          cpus: '0.3'
+          memory: 256M
+
+# ==============================================================================
+# DOCKER NETWORKS (TIÊU CHÍ 6 - HARDENING: NETWORK ISOLATION)
+# ==============================================================================
+networks:
+  # Mạng Frontend: Nginx tiếp nhận traffic người dùng và chuyển tiếp tới Web App
+  frontend-net:
+    driver: bridge
+  # Mạng Backend: App kết nối tới PostgreSQL và pgAdmin (Cách ly hoàn toàn khỏi Nginx)
+  backend-net:
+    driver: bridge
+  # Mạng Monitoring: Prometheus, Grafana, Loki, Promtail thu thập metrics và logs
+  monitoring-net:
+    driver: bridge
+
+# ==============================================================================
+# PERSISTENT VOLUMES
+# ==============================================================================
+volumes:
+  postgres_data:
+    name: appointment_postgres_data
+  pgadmin_data:
+    name: appointment_pgadmin_data
+  prometheus_data:
+    name: appointment_prometheus_data
+  grafana_data:
+    name: appointment_grafana_data
+  loki_data:
+    name: appointment_loki_data
+  app_logs:
+    name: appointment_app_logs
+  nginx_logs:
+    name: appointment_nginx_logs

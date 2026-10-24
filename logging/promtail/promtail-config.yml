@@ -1,0 +1,59 @@
+# ==============================================================================
+# PROMTAIL LOG SHIPPER CONFIGURATION
+# Tuân thủ Tiêu chí 5: Hệ thống log tập trung (Thu thập log gửi về Loki)
+# ==============================================================================
+
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+
+scrape_configs:
+  # 1. Thu thập log của ứng dụng Web Đặt lịch hẹn
+  - job_name: appointment-app
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: appointment-app
+          service: appointment-system
+          environment: production
+          __path__: /var/log/app/*.log
+    pipeline_stages:
+      - json:
+          expressions:
+            level: level
+            action: action
+            booking_code: booking_code
+            status: status
+            url: url
+            message: message
+      - labels:
+          level:
+          action:
+          booking_code:
+
+  # 2. Thu thập log của Nginx Reverse Proxy
+  - job_name: nginx
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: nginx
+          service: nginx-reverse-proxy
+          environment: production
+          __path__: /var/log/nginx/*.log
+    pipeline_stages:
+      - json:
+          expressions:
+            status: status
+            request: request
+            remote_addr: remote_addr
+            request_time: request_time
+      - labels:
+          status:

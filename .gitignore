@@ -24,3 +24,9 @@ desktop.ini
 __pycache__/
 *.py[cod]
 *$py.class
+
+# Local documentation & helper scripts (excluded from repository per request)
+docs/
+run.bat
+run.sh
+setup-docker.bat

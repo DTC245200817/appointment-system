@@ -1,0 +1,28 @@
+# ==============================================================================
+# PROMETHEUS CONFIGURATION
+# Tuân thủ Tiêu chí 4: Hệ thống giám sát (Prometheus + Grafana)
+# ==============================================================================
+
+global:
+  scrape_interval: 5s
+  evaluation_interval: 5s
+  external_labels:
+    monitor: 'appointment-system-monitor'
+
+scrape_configs:
+  # 1. Thu thập metrics từ ứng dụng Node.js (Web App Đặt lịch hẹn)
+  - job_name: 'appointment-app'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['app:3000']
+        labels:
+          service: 'appointment-app'
+          tier: 'backend'
+          env: 'production'
+
+  # 2. Thu thập metrics nội tại của chính Prometheus Server
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+        labels:
+          service: 'prometheus-internal'
